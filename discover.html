@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discover the Region — Slow Lucerne</title>
+  <meta name="description" content="Explore Lucerne city, the lake, the mountains, and the quiet villages that make this region one of Europe's most quietly beautiful." />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* --- Page Header --- */
+    .page-header {
+      padding: 9rem 0 5rem;
+      background: var(--color-bg);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 120%, rgba(74,124,158,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .page-header__eyebrow {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-stone);
+      margin-bottom: 0.75rem;
+    }
+
+    .page-header h1 {
+      margin-bottom: 1.25rem;
+    }
+
+    .page-header__intro {
+      max-width: 56ch;
+      margin: 0 auto;
+      font-size: 1.08rem;
+      color: var(--color-text-muted);
+      line-height: 1.75;
+    }
+
+    /* --- Filter Bar --- */
+    .filter-bar {
+      background: var(--color-card-bg);
+      border-top: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+      padding: 1.25rem 0;
+      position: sticky;
+      top: 60px;
+      z-index: 50;
+    }
+
+    .filter-bar__inner {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-bar__group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .filter-bar__label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    .filter-bar__pills {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      padding: 0.38rem 0.9rem;
+      border-radius: 100px;
+      border: 1.5px solid var(--color-border);
+      background: var(--color-white);
+      color: var(--color-text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
+      font-weight: 400;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+    }
+
+    .filter-pill:hover {
+      border-color: var(--color-blue);
+      color: var(--color-blue);
+    }
+
+    .filter-pill.active {
+      background: var(--color-blue);
+      border-color: var(--color-blue);
+      color: var(--color-white);
+      font-weight: 500;
+    }
+
+    .filter-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--color-border);
+    }
+
+    /* --- Location Grid --- */
+    .locations {
+      padding: 4rem 0 6rem;
+    }
+
+    .locations__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 2rem;
+    }
+
+    .location-card {
+      background: var(--color-card-bg);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-card);
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .location-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .location-card.hidden {
+      display: none;
+    }
+
+    .location-card__image-wrap {
+      position: relative;
+      height: 230px;
+      overflow: hidden;
+    }
+
+    .location-card__image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s ease;
+    }
+
+    .location-card:hover .location-card__image {
+      transform: scale(1.05);
+    }
+
+    .location-card__tags {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.28rem 0.65rem;
+      border-radius: 100px;
+      backdrop-filter: blur(8px);
+    }
+
+    .tag--nature  { background: rgba(61,90,62,0.85);   color: #fff; }
+    .tag--water   { background: rgba(74,124,158,0.85);  color: #fff; }
+    .tag--city    { background: rgba(28,28,28,0.75);    color: #fff; }
+    .tag--village { background: rgba(139,115,85,0.85);  color: #fff; }
+
+    .pace-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(245,240,232,0.92);
+      backdrop-filter: blur(8px);
+      padding: 0.28rem 0.65rem;
+      border-radius: 100px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+
+    .pace-badge--slow   { color: var(--color-green); }
+    .pace-badge--active { color: var(--color-blue); }
+
+    .location-card__body {
+      padding: 1.5rem 1.75rem 1.75rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .location-card__title {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 0.5rem;
+    }
+
+    .location-card__soul {
+      font-size: 0.97rem;
+      color: var(--color-text-muted);
+      line-height: 1.65;
+      font-style: italic;
+      max-width: none;
+      flex: 1;
+    }
+
+    .location-card__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .location-card__meta {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .location-card__meta svg {
+      opacity: 0.5;
+    }
+
+    /* No results */
+    .no-results {
+      display: none;
+      text-align: center;
+      padding: 5rem 0;
+      color: var(--color-text-muted);
+    }
+
+    .no-results.visible {
+      display: block;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .filter-bar__inner {
+        gap: 1rem;
+      }
+
+      .filter-bar {
+        top: 0;
+        position: static;
+      }
+
+      .locations__grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===================== NAVIGATION ===================== -->
+  <nav class="nav scrolled" id="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">Slow Lucerne</a>
+      <ul class="nav__links">
+        <li><a href="discover.html" class="active">Discover</a></li>
+        <li><a href="planner.html">Plan My Trip</a></li>
+        <li><a href="stories.html">Stories</a></li>
+        <li><a href="index.html#newsletter" class="btn btn--secondary" style="padding:0.45rem 1.1rem; font-size:0.82rem; letter-spacing:0.04em; text-transform:none;">Stay in touch</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ===================== PAGE HEADER ===================== -->
+  <header class="page-header">
+    <div class="container">
+      <span class="page-header__eyebrow reveal">Seven places. One region.</span>
+      <h1 class="reveal reveal--delay-1">Discover the Region</h1>
+      <p class="page-header__intro reveal reveal--delay-2">
+        The Lucerne region is a small world. Mountains you can touch from the city. A lake that
+        changes color with the weather. Villages where time runs at a different speed.
+        Here's how it all fits together.
+      </p>
+    </div>
+  </header>
+
+  <!-- ===================== FILTER BAR ===================== -->
+  <div class="filter-bar">
+    <div class="container">
+      <div class="filter-bar__inner">
+
+        <div class="filter-bar__group">
+          <span class="filter-bar__label">Pace</span>
+          <div class="filter-bar__pills" id="pace-filters">
+            <button class="filter-pill active" data-filter="pace" data-value="all">All</button>
+            <button class="filter-pill" data-filter="pace" data-value="slow">Slow</button>
+            <button class="filter-pill" data-filter="pace" data-value="active">Active</button>
+          </div>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-bar__group">
+          <span class="filter-bar__label">Type</span>
+          <div class="filter-bar__pills" id="type-filters">
+            <button class="filter-pill active" data-filter="type" data-value="all">All</button>
+            <button class="filter-pill" data-filter="type" data-value="nature">Nature</button>
+            <button class="filter-pill" data-filter="type" data-value="village">Village</button>
+            <button class="filter-pill" data-filter="type" data-value="city">City</button>
+            <button class="filter-pill" data-filter="type" data-value="water">Water</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== LOCATION CARDS ===================== -->
+  <section class="locations">
+    <div class="container">
+      <div class="locations__grid" id="locations-grid">
+
+        <!-- Lucerne City -->
+        <article class="location-card reveal" data-pace="slow" data-type="city">
+          <div class="location-card__image-wrap">
+            <img
+              class="location-card__image"
+              src="https://images.unsplash.com/photo-1504151932400-72d4384f04b3?w=800&q=80&auto=format&fit=crop"
+              alt="The Chapel Bridge and Lucerne's medieval old town at golden hour"
+              loading="lazy"
+            />
+            <div class="location-card__tags">
+              <span class="tag tag--city">City</span>
+            </div>
+            <span class="pace-badge pace-badge--slow">Slow</span>
+          </div>
+          <div class="location-card__body">
+            <h3 class="location-card__title">Lucerne</h3>
+            <p class="location-card__soul">
+              A medieval city that never learned to rush — where the oldest wooden bridge in Europe
+              stands over a river that reflects mountains on a clear morning.
+            </p>
+            <div class="location-card__footer">
+              <span class="location-card__meta">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Central Switzerland
+              </span>
+              <span style="font-size:0.78rem; color:var(--color-blue); font-weight:500;">City base</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Lake Lucerne -->
+        <article class="location-card reveal reveal--delay-1" data-pace="slow" data-type="water">
+          <div class="location-card__image-wrap">
+            <img
+              class="location-card__image"
+              src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&auto=format&fit=crop"
+              alt="Lake Lucerne (Vierwaldstättersee) with mountains reflected in the still water"
+              loading="lazy"
+            />
+            <div class="location-card__tags">
+              <span class="tag tag--water">Water</span>
+              <span class="tag tag--nature">Nature</span>
+            </div>
+            <span class="pace-badge pace-badge--slow">Slow</span>
+          </div>
+          <div class="location-card__body">
+            <h3 class="location-card__title">Lake Lucerne</h3>
+            <p class="location-card__soul">
+              The lake holds the whole region together — and on the right morning, with no wind and
+              the Alps overhead, it holds you completely still too.
+            </p>
+            <div class="location-card__footer">
+              <span class="location-card__meta">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Vierwaldstättersee
+              </span>
+              <span style="font-size:0.78rem; color:var(--color-blue); font-weight:500;">Take the boat</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Mount Pilatus -->
+        <article class="location-card reveal reveal--delay-2" data-pace="active" data-type="nature">
+          <div class="location-card__image-wrap">
+            <img
+              class="location-card__image"
+              src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80&auto=format&fit=crop"
+              alt="Mount Pilatus summit above the clouds at sunset"
+              loading="lazy"
+            />
+            <div class="location-card__tags">
+              <span class="tag tag--nature">Nature</span>
+            </div>
+            <span class="pace-badge pace-badge--active">Active</span>
+          </div>
+          <div class="location-card__body">
+            <h3 class="location-card__title">Mount Pilatus</h3>
+            <p class="location-card__soul">
+              Lucerne's guardian mountain — and the one that earns its reputation. When the summit
+              clears and the whole lake appears below, it stops being scenery and becomes something personal.
+            </p>
+            <div class="location-card__footer">
+              <span class="location-card__meta">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                2,128m
+              </span>
+              <span style="font-size:0.78rem; color:var(--color-green); font-weight:500;">World's steepest cog railway</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Mount Rigi -->
+        <article class="location-card reveal" data-pace="slow" data-type="nature">
+          <div class="location-card__image-wrap">
+            <img
+              class="location-card__image"
+              src="https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&q=80&auto=format&fit=crop"
+              alt="Hiking trail on Mount Rigi with sweeping views over the lake"
+              loading="lazy"
+            />
+            <div class="location-card__tags">
+              <span class="tag tag--nature">Nature</span>
+            </div>
+            <span class="pace-badge pace-badge--slow">Slow</span>
+          </div>
+          <div class="location-card__body">
+            <h3 class="location-card__title">Mount Rigi</h3>
+            <p class="location-card__soul">
+              The "Queen of the Mountains" — less dramatic than Pilatus, more contemplative. Turner
+              painted it. It's the kind of mountain you stay on overnight to watch the fog lift.
+            </p>
+            <div class="location-card__footer">
+              <span class="location-card__meta">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                1,798m
+              </span>
+              <span style="font-size:0.78rem; color:var(--color-green); font-weight:500;">Stay overnight</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Weggis -->
+        <article class="location-card reveal reveal--delay-1" data-pace="slow" data-type="village">
+          <div class="location-card__image-wrap">
+            <img
+              class="location-card__image"
+              src="https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=800&q=80&auto=format&fit=crop"
+              alt="The quiet lakeside village of Weggis on Lake Lucerne"
+              loading="lazy"
+            />
+            <div class="location-card__tags">
+              <span class="tag tag--village">Village</span>
+              <span class="tag tag--water">Water</span>
+            </div>
+            <span class="pace-badge pace-badge--slow">Slow</span>
+          </div>
+          <div class="location-card__body">
+            <h3 class="location-card__title">Weggis</h3>
+            <p class="location-card__soul">
+              A lakeside village with a Mediterranean microclimate — palm trees, fig trees, and the
+              kind of afternoon heat that makes you genuinely forget where you are.
+            </p>
+            <div class="location-card__footer">
+              <span class="location-card__meta">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                On the lake
+              </span>
+              <span style="font-size:0.78rem; color:var(--color-stone); font-weight:500;">Best hidden terrace</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Vitznau -->
+        <article class="location-card reveal reveal--delay-2" data-pace="slow" data-type="village">
+          <div class="location-card__image-wrap">
+            <img
+              class="location-card__image"
+              src="https://images.unsplash.com/photo-1518623489648-a173ef7824f3?w=800&q=80&auto=format&fit=crop"
+              alt="Vitznau village seen from the lake with Rigi in the background"
+              loading="lazy"
+            />
+            <div class="location-card__tags">
+              <span class="tag tag--village">Village</span>
+              <span class="tag tag--water">Water</span>
+            </div>
+            <span class="pace-badge pace-badge--slow">Slow</span>
+          </div>
+          <div class="location-card__body">
+            <h3 class="location-card__title">Vitznau</h3>
+            <p class="location-card__soul">
+              The village you arrive at by boat and immediately understand why people never quite
+              leave. Tiny, tucked, and the departure point for the world's first mountain cogwheel railway.
+            </p>
+            <div class="location-card__footer">
+              <span class="location-card__meta">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Rigi base
+              </span>
+              <span style="font-size:0.78rem; color:var(--color-stone); font-weight:500;">Historic cog railway</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Engelberg -->
+        <article class="location-card reveal" data-pace="active" data-type="nature">
+          <div class="location-card__image-wrap">
+            <img
+              class="location-card__image"
+              src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&q=80&auto=format&fit=crop"
+              alt="Engelberg valley with Titlis glacier in the background"
+              loading="lazy"
+            />
+            <div class="location-card__tags">
+              <span class="tag tag--nature">Nature</span>
+              <span class="tag tag--village">Village</span>
+            </div>
+            <span class="pace-badge pace-badge--active">Active</span>
+          </div>
+          <div class="location-card__body">
+            <h3 class="location-card__title">Engelberg</h3>
+            <p class="location-card__soul">
+              Angel Mountain — a glaciated valley, a Benedictine monastery, and the Titlis
+              cable car that delivers you, disbelieving, into a permanent winter above the clouds.
+            </p>
+            <div class="location-card__footer">
+              <span class="location-card__meta">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                45 min from Lucerne
+              </span>
+              <span style="font-size:0.78rem; color:var(--color-blue); font-weight:500;">Year-round glacier</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <div class="no-results" id="no-results">
+        <p style="font-size:1rem;">No places match that combination — try a different filter.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== CTA STRIP ===================== -->
+  <section style="background:var(--color-card-bg); border-top:1px solid var(--color-border); padding:4rem 0; text-align:center;">
+    <div class="container">
+      <h2 class="reveal" style="margin-bottom:0.75rem;">Ready to plan your time here?</h2>
+      <p class="reveal reveal--delay-1" style="margin:0 auto 2rem; max-width:44ch; font-size:1.05rem;">
+        Tell the AI planner how you travel and get a personalized itinerary — written in the same unhurried tone as everything else here.
+      </p>
+      <a href="planner.html" class="btn btn--primary reveal reveal--delay-2">
+        Build my itinerary
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <div class="footer__brand-name">Slow Lucerne</div>
+          <p class="footer__brand-tagline">An insider's guide to the region — for those who travel with intention.</p>
+        </div>
+        <div class="footer__newsletter">
+          <div class="footer__newsletter-label">Stay unhurried</div>
+          <p class="footer__newsletter-hint">New stories and guides, no more than twice a month.</p>
+          <form class="footer__form" onsubmit="handleNewsletterSubmit(event)">
+            <input type="email" class="footer__input" placeholder="your@email.com" required aria-label="Email address" />
+            <button type="submit" class="footer__submit">Subscribe</button>
+          </form>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>© 2025 Slow Lucerne</span>
+        <nav class="footer__nav">
+          <a href="discover.html">Discover</a>
+          <a href="planner.html">Plan a Trip</a>
+          <a href="stories.html">Stories</a>
+        </nav>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===================== SCRIPTS ===================== -->
+  <script src="script.js"></script>
+  <script>
+    // --- Filter logic ---
+    const cards = document.querySelectorAll('.location-card');
+    const noResults = document.getElementById('no-results');
+    let activeFilters = { pace: 'all', type: 'all' };
+
+    document.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.addEventListener('click', function () {
+        const filterGroup = this.dataset.filter;
+        const filterValue = this.dataset.value;
+
+        // Update active pill in group
+        document.querySelectorAll(`.filter-pill[data-filter="${filterGroup}"]`).forEach(p => {
+          p.classList.remove('active');
+        });
+        this.classList.add('active');
+
+        // Update active filters
+        activeFilters[filterGroup] = filterValue;
+
+        // Filter cards
+        let visibleCount = 0;
+        cards.forEach(card => {
+          const paceMatch = activeFilters.pace === 'all' || card.dataset.pace === activeFilters.pace;
+          const typeMatch = activeFilters.type === 'all' || card.dataset.type === activeFilters.type;
+
+          if (paceMatch && typeMatch) {
+            card.classList.remove('hidden');
+            visibleCount++;
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+
+        noResults.classList.toggle('visible', visibleCount === 0);
+      });
+    });
+
+    // Newsletter
+    function handleNewsletterSubmit(e) {
+      e.preventDefault();
+      const form = e.target;
+      const input = form.querySelector('input');
+      const btn = form.querySelector('button');
+      btn.textContent = 'You\'re in ✓';
+      btn.style.background = 'rgba(255,255,255,0.35)';
+      input.value = '';
+      input.disabled = true;
+      btn.disabled = true;
+    }
+  </script>
+
+</body>
+</html>
